@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Librería UTN — Gestión de libros, clientes y ventas</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header>
+    <h1>Librería UTN</h1>
+    <nav aria-label="Navegación principal">
+      <ul>
+        <li><a href="#vista-catalogo" data-view="vista-catalogo">Catálogo</a></li>
+        <li><a href="#vista-libros" data-view="vista-libros">Libros</a></li>
+        <li><a href="#vista-clientes" data-view="vista-clientes">Clientes</a></li>
+        <li><a href="#vista-ventas" data-view="vista-ventas">Ventas</a></li>
+        <li><a href="#vista-historial" data-view="vista-historial">Historial</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <div id="mensaje-exito" role="status"></div>
+    <div id="mensaje-error" role="alert"></div>
+
+    <section id="vista-catalogo" aria-labelledby="titulo-catalogo">
+      <h2 id="titulo-catalogo">Catálogo</h2>
+      <div>
+        <label for="buscador-catalogo">Buscar por título</label>
+        <input type="search" id="buscador-catalogo" name="buscador-catalogo" placeholder="Título del libro">
+      </div>
+      <div id="lista-catalogo">
+        <article>
+          <h3>Don Quijote de la Mancha</h3>
+          <p>ISBN: 978-84-376-0494-7</p>
+          <p>Editorial: Cátedra</p>
+          <p>Género: Novela</p>
+          <p>Autores: Miguel de Cervantes</p>
+          <p>Precio: $15000</p>
+        </article>
+        <article>
+          <h3>Poesías completas (ejemplo)</h3>
+          <p>ISBN: 978-950-03-0000-1</p>
+          <p>Editorial: Ejemplo Sur</p>
+          <p>Género: Sin clasificar</p>
+          <p>Autores: Autora Ejemplo, Autor Ejemplo</p>
+          <p>Precio: $8000</p>
+        </article>
+      </div>
+      <div id="catalogo-vacio" hidden>No hay libros en el catálogo.</div>
+      <div id="busqueda-sin-resultados" hidden>No se encontraron libros con ese título.</div>
+    </section>
+
+    <section id="vista-libros" aria-labelledby="titulo-libros" hidden>
+      <h2 id="titulo-libros">Libros</h2>
+      <form id="form-libro" action="#" method="post">
+        <div>
+          <label for="libro-titulo">Título</label>
+          <input type="text" id="libro-titulo" name="titulo" required>
+        </div>
+        <div>
+          <label for="libro-isbn">ISBN</label>
+          <input type="text" id="libro-isbn" name="isbn" required>
+        </div>
+        <div>
+          <label for="libro-editorial">Editorial</label>
+          <input type="text" id="libro-editorial" name="editorial" required>
+        </div>
+        <div>
+          <label for="libro-genero">Género</label>
+          <input type="text" id="libro-genero" name="genero">
+        </div>
+        <div>
+          <label for="libro-autores">Autores</label>
+          <input type="text" id="libro-autores" name="autores" required>
+        </div>
+        <div>
+          <label for="libro-precio">Precio</label>
+          <input type="number" id="libro-precio" name="precio" min="0" step="0.01" required>
+        </div>
+        <button type="submit">Agregar libro</button>
+      </form>
+      <div class="tabla-contenedor">
+      <table id="tabla-libros">
+        <thead>
+          <tr>
+            <th scope="col">Título</th>
+            <th scope="col">ISBN</th>
+            <th scope="col">Editorial</th>
+            <th scope="col">Género</th>
+            <th scope="col">Autores</th>
+            <th scope="col">Precio</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpo-tabla-libros">
+          <tr>
+            <td>Don Quijote de la Mancha</td>
+            <td>978-84-376-0494-7</td>
+            <td>Cátedra</td>
+            <td>Novela</td>
+            <td>Miguel de Cervantes</td>
+            <td>$15000</td>
+          </tr>
+          <tr>
+            <td>Poesías completas (ejemplo)</td>
+            <td>978-950-03-0000-1</td>
+            <td>Ejemplo Sur</td>
+            <td>Sin clasificar</td>
+            <td>Autora Ejemplo, Autor Ejemplo</td>
+            <td>$8000</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+      <div id="libros-vacio" hidden>No hay libros cargados.</div>
+    </section>
+
+    <section id="vista-clientes" aria-labelledby="titulo-clientes" hidden>
+      <h2 id="titulo-clientes">Clientes</h2>
+      <form id="form-cliente" action="#" method="post">
+        <div>
+          <label for="cliente-nombre">Nombre</label>
+          <input type="text" id="cliente-nombre" name="nombre" required>
+        </div>
+        <div>
+          <label for="cliente-apellido">Apellido</label>
+          <input type="text" id="cliente-apellido" name="apellido" required>
+        </div>
+        <div>
+          <label for="cliente-dni">DNI</label>
+          <input type="text" id="cliente-dni" name="dni" required>
+        </div>
+        <div>
+          <label for="cliente-email">Email</label>
+          <input type="email" id="cliente-email" name="email" required>
+        </div>
+        <div>
+          <label for="cliente-telefono">Teléfono</label>
+          <input type="tel" id="cliente-telefono" name="telefono">
+        </div>
+        <button type="submit">Agregar cliente</button>
+      </form>
+      <div class="tabla-contenedor">
+      <table id="tabla-clientes">
+        <thead>
+          <tr>
+            <th scope="col">Nombre</th>
+            <th scope="col">Apellido</th>
+            <th scope="col">DNI</th>
+            <th scope="col">Email</th>
+            <th scope="col">Teléfono</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpo-tabla-clientes">
+          <tr>
+            <td>María</td>
+            <td>González</td>
+            <td>30123456</td>
+            <td>maria.gonzalez@ejemplo.com</td>
+            <td>341-555-0101</td>
+          </tr>
+          <tr>
+            <td>Juan</td>
+            <td>Pérez</td>
+            <td>28987654</td>
+            <td>juan.perez@ejemplo.com</td>
+            <td>341-555-0102</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+      <div id="clientes-vacio" hidden>No hay clientes cargados.</div>
+    </section>
+
+    <section id="vista-ventas" aria-labelledby="titulo-ventas" hidden>
+      <h2 id="titulo-ventas">Ventas</h2>
+      <form id="form-venta" action="#" method="post">
+        <div>
+          <label for="venta-cliente">Cliente</label>
+          <select id="venta-cliente" name="cliente" required>
+            <option value="">Seleccione un cliente</option>
+            <option value="1">María González</option>
+            <option value="2">Juan Pérez</option>
+          </select>
+        </div>
+        <div id="renglones-venta">
+          <div>
+            <label>Libro
+              <select name="libro" required>
+                <option value="">Seleccione un libro</option>
+                <option value="978-84-376-0494-7">Don Quijote de la Mancha</option>
+                <option value="978-950-03-0000-1">Poesías completas (ejemplo)</option>
+              </select>
+            </label>
+            <label>Cantidad
+              <input type="number" name="cantidad" min="1" value="1" required>
+            </label>
+          </div>
+        </div>
+        <button type="button">Agregar renglón</button>
+        <div id="resumen-venta">
+          <p>Subtotal: <span id="resumen-subtotal">$0</span></p>
+          <p>Descuentos: <span id="resumen-descuentos">$0</span></p>
+          <p>Total: <span id="resumen-total">$0</span></p>
+        </div>
+        <button type="submit">Registrar venta</button>
+        <div id="mensaje-venta-exito" role="status" hidden>Venta registrada con éxito.</div>
+        <div id="mensaje-venta-error" role="alert" hidden>No se pudo registrar la venta. Revise los datos.</div>
+      </form>
+    </section>
+
+    <section id="vista-historial" aria-labelledby="titulo-historial" hidden>
+      <h2 id="titulo-historial">Historial</h2>
+      <div class="tabla-contenedor">
+      <table id="tabla-historial">
+        <thead>
+          <tr>
+            <th scope="col">ID / Fecha</th>
+            <th scope="col">Cliente</th>
+            <th scope="col">Ítems</th>
+            <th scope="col">Total</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpo-tabla-historial">
+          <tr>
+            <td>1 — 01/10/2026</td>
+            <td>María González</td>
+            <td>2</td>
+            <td>$30000</td>
+          </tr>
+          <tr>
+            <td>2 — 05/10/2026</td>
+            <td>Juan Pérez</td>
+            <td>1</td>
+            <td>$8000</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+      <div id="historial-vacio" hidden>No hay ventas registradas.</div>
+      <div id="detalle-venta">
+        <h3>Detalle de venta (ejemplo)</h3>
+        <p>Cliente: María González</p>
+        <ul>
+          <li>Don Quijote de la Mancha — Cantidad: 2 — Precio: $15000</li>
+        </ul>
+        <p>Total: $30000</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Librería UTN — Trabajo Práctico Integrador de Frontend (Programación III)</p>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
