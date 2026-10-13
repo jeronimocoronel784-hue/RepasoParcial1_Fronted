@@ -65,15 +65,15 @@
         </div>
         <div>
           <label for="libro-editorial">Editorial</label>
-          <input type="text" id="libro-editorial" name="editorial" required>
+          <select id="libro-editorial" name="editorial" required></select>
         </div>
         <div>
           <label for="libro-genero">Género</label>
-          <input type="text" id="libro-genero" name="genero">
+          <select id="libro-genero" name="genero"></select>
         </div>
         <div>
           <label for="libro-autores">Autores</label>
-          <input type="text" id="libro-autores" name="autores" required>
+          <select id="libro-autores" name="autores" multiple size="3" required></select>
         </div>
         <div>
           <label for="libro-precio">Precio</label>
@@ -81,6 +81,7 @@
         </div>
         <button type="submit">Agregar libro</button>
       </form>
+      <div id="errores-libro" role="alert" hidden></div>
       <div class="tabla-contenedor">
       <table id="tabla-libros">
         <thead>
@@ -141,6 +142,7 @@
         </div>
         <button type="submit">Agregar cliente</button>
       </form>
+      <div id="errores-cliente" role="alert" hidden></div>
       <div class="tabla-contenedor">
       <table id="tabla-clientes">
         <thead>
