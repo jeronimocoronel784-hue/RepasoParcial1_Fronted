@@ -1,0 +1,457 @@
+/* ============================================================
+   Librería UTN — css/styles.css (Fase 2: presentación adaptable)
+   Único archivo de estilos. Sin recursos externos ni frameworks.
+   Metodología: español + BEM simplificado de un nivel
+   (.bloque, .bloque--modificador). Los ids quedan para el JS futuro:
+   las reglas reutilizables se declaran como clase y se aplican al
+   HTML actual también vía selector de elemento (p. ej. `button,
+   .boton`), sin estilos inline ni selectores de presentación por #id.
+   Layout: Grid principal (página + catálogo) + Flex de apoyo
+   (nav, formularios, resumen).
+   ============================================================ */
+
+/* ---------- 1. Reset mínimo y tokens propios ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  /* Paleta propia (4 + estados): papel, tinta, azul biblioteca, ocre */
+  --fondo: #faf8f2;
+  --tinta: #1f2933;
+  --primario: #1e3a5f;
+  --primario-oscuro: #152a45;
+  --acento: #b45309;
+  --exito: #166534;
+  --exito-fondo: #ecfdf3;
+  --error: #b91c1c;
+  --error-fondo: #fef2f2;
+  --borde: #d8d2c4;
+  --blanco: #ffffff;
+
+  /* Tipografía: pila del sistema, sin descargas externas */
+  --fuente-base: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --fuente-titulos: Georgia, "Times New Roman", serif;
+
+  /* Escala de espaciado 4/8/16/24/32 */
+  --espacio-1: 4px;
+  --espacio-2: 8px;
+  --espacio-3: 16px;
+  --espacio-4: 24px;
+  --espacio-5: 32px;
+
+  --radio-tarjeta: 8px;
+  --radio-control: 6px;
+  --ancho-maximo: 1100px;
+}
+
+/* ---------- Base: página con Grid ---------- */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+html,
+body {
+  overflow-x: hidden; /* red de seguridad: el scroll de tablas vive en .tabla-contenedor */
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background-color: var(--fondo);
+  color: var(--tinta);
+  font-family: var(--fuente-base);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+img,
+table {
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--fuente-titulos);
+  line-height: 1.25;
+  margin: 0 0 var(--espacio-3);
+}
+
+h1 {
+  font-size: 2rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+}
+
+h3 {
+  font-size: 1.25rem;
+}
+
+p {
+  margin: 0 0 var(--espacio-2);
+}
+
+/* ---------- Header / nav (Flex de apoyo) ---------- */
+header {
+  background-color: var(--primario);
+  color: var(--blanco);
+  padding: var(--espacio-3) var(--espacio-4);
+}
+
+header h1 {
+  margin-bottom: var(--espacio-2);
+  color: var(--blanco);
+}
+
+nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2) var(--espacio-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+nav a {
+  color: var(--blanco);
+  text-decoration: none;
+  font-weight: 700;
+  padding: var(--espacio-1) var(--espacio-2);
+  border-radius: var(--radio-control);
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Main / footer ---------- */
+main {
+  width: 100%;
+  max-width: var(--ancho-maximo);
+  margin: 0 auto;
+  padding: var(--espacio-4) var(--espacio-3);
+}
+
+main > section {
+  max-width: 70ch; /* línea legible para texto */
+}
+
+main > section:has(table),
+main > section:has(#lista-catalogo) {
+  max-width: none; /* tablas y catálogo usan el ancho disponible */
+}
+
+footer {
+  background-color: var(--primario);
+  color: var(--blanco);
+  text-align: center;
+  padding: var(--espacio-3);
+}
+
+footer p {
+  margin: 0;
+}
+
+/* ---------- Enlaces ---------- */
+a {
+  color: var(--primario);
+}
+
+/* ---------- 2. Clases reutilizables: formularios y botones ---------- */
+.formulario,
+form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+  background-color: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  padding: var(--espacio-4);
+  margin-bottom: var(--espacio-4);
+  max-width: 70ch;
+}
+
+.formulario > div,
+form > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2) var(--espacio-3);
+  align-items: center;
+}
+
+label {
+  font-weight: 700;
+}
+
+.campo,
+input[type="text"],
+input[type="search"],
+input[type="number"],
+input[type="email"],
+input[type="tel"],
+select {
+  font: inherit;
+  color: var(--tinta);
+  background-color: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-control);
+  padding: var(--espacio-2) var(--espacio-3);
+  min-width: 0;
+  flex: 1 1 220px;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  flex: none;
+}
+
+.boton,
+button {
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--blanco);
+  background-color: var(--primario);
+  border: 2px solid var(--primario);
+  border-radius: var(--radio-control);
+  padding: var(--espacio-2) var(--espacio-3);
+  align-self: flex-start;
+  transition: background-color 150ms ease-in-out;
+}
+
+.boton:hover,
+button:hover {
+  background-color: var(--primario-oscuro);
+  border-color: var(--primario-oscuro);
+}
+
+.boton--secundario,
+button[type="button"] {
+  background-color: transparent;
+  color: var(--primario);
+}
+
+.boton--secundario:hover,
+button[type="button"]:hover {
+  background-color: var(--primario);
+  color: var(--blanco);
+}
+
+/* ---------- Resumen de venta (Flex de apoyo) ---------- */
+.resumen,
+#resumen-venta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2) var(--espacio-4);
+  background-color: var(--fondo);
+  border: 1px dashed var(--borde);
+  border-radius: var(--radio-control);
+  padding: var(--espacio-3);
+}
+
+.resumen p,
+#resumen-venta p {
+  margin: 0;
+}
+
+#renglones-venta > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2) var(--espacio-3);
+}
+
+/* ---------- 3. Catálogo con Grid ---------- */
+#lista-catalogo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--espacio-3);
+  margin: var(--espacio-3) 0;
+}
+
+.tarjeta,
+#lista-catalogo article {
+  background-color: var(--blanco);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  box-shadow: 0 1px 4px rgba(31, 41, 51, 0.12);
+  padding: var(--espacio-3);
+}
+
+.tarjeta h3,
+#lista-catalogo article h3 {
+  margin-bottom: var(--espacio-2);
+}
+
+.tarjeta .precio,
+#lista-catalogo article p:last-child {
+  color: var(--acento);
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin-bottom: 0;
+}
+
+/* ---------- 4. Tablas con scroll interno ---------- */
+.tabla-contenedor {
+  overflow-x: auto;
+  margin-bottom: var(--espacio-4);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  background-color: var(--blanco);
+}
+
+table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  background-color: var(--blanco);
+}
+
+caption {
+  text-align: left;
+  font-weight: 700;
+  padding: var(--espacio-2) var(--espacio-3);
+}
+
+th,
+td {
+  text-align: left;
+  padding: var(--espacio-2) var(--espacio-3);
+  border-bottom: 1px solid var(--borde);
+}
+
+thead th {
+  background-color: var(--primario);
+  color: var(--blanco);
+}
+
+tbody tr:nth-child(even) {
+  background-color: var(--fondo);
+}
+
+/* ---------- Estados vacíos ---------- */
+.vacio,
+#catalogo-vacio,
+#busqueda-sin-resultados,
+#libros-vacio,
+#clientes-vacio,
+#historial-vacio {
+  border: 1px dashed var(--borde);
+  border-radius: var(--radio-control);
+  padding: var(--espacio-3);
+  margin-bottom: var(--espacio-3);
+  background-color: var(--blanco);
+}
+
+/* ---------- Mensajes: texto + prefijo, nunca solo color ---------- */
+.mensaje-error,
+.mensaje-exito,
+#mensaje-error,
+#mensaje-venta-error,
+#mensaje-exito,
+#mensaje-venta-exito {
+  border-radius: var(--radio-control);
+  padding: var(--espacio-2) var(--espacio-3);
+  margin-bottom: var(--espacio-3);
+  font-weight: 700;
+}
+
+.mensaje-error:empty,
+#mensaje-error:empty,
+#mensaje-venta-error:empty,
+.mensaje-exito:empty,
+#mensaje-exito:empty,
+#mensaje-venta-exito:empty {
+  display: none;
+}
+
+.mensaje-error,
+#mensaje-error,
+#mensaje-venta-error {
+  color: var(--error);
+  background-color: var(--error-fondo);
+  border-left: 6px solid var(--error);
+}
+
+.mensaje-error::before,
+#mensaje-error::before,
+#mensaje-venta-error::before {
+  content: "Error: ";
+}
+
+.mensaje-exito,
+#mensaje-exito,
+#mensaje-venta-exito {
+  color: var(--exito);
+  background-color: var(--exito-fondo);
+  border-left: 6px solid var(--exito);
+}
+
+.mensaje-exito::before,
+#mensaje-exito::before,
+#mensaje-venta-exito::before {
+  content: "Éxito: ";
+}
+
+/* ---------- 5. Accesibilidad: foco visible, hidden intacto ---------- */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--acento);
+  outline-offset: 2px;
+}
+
+/* El atributo hidden de las vistas no se altera desde CSS:
+   ninguna regla display sobre section[hidden]; sin reordenamientos. */
+
+/* ---------- 6. Responsive: refuerzo móvil ---------- */
+@media (max-width: 480px) {
+  nav ul {
+    flex-direction: column;
+    gap: var(--espacio-2);
+  }
+
+  .formulario > div,
+  form > div,
+  #renglones-venta > div {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .campo,
+  input[type="text"],
+  input[type="search"],
+  input[type="number"],
+  input[type="email"],
+  input[type="tel"],
+  select {
+    flex-basis: auto;
+    width: 100%;
+  }
+
+  .boton,
+  button {
+    align-self: stretch;
+    text-align: center;
+  }
+
+  main {
+    padding: var(--espacio-3) var(--espacio-2);
+  }
+}
+
+/* ---------- 7. Movimiento reducido ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none;
+  }
+}
