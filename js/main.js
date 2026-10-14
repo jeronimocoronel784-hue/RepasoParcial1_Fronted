@@ -2,10 +2,48 @@
 
 /* Lógica de catálogo y navegación mínima (Ejercicio 3).
    Depende de js/data.js (DATOS_INICIALES + estado). Sin librerías,
-   sin carga remota, sin persistencia en navegador. Todos los datos
-   se insertan solo como texto seguro, nunca como marcado. */
+   sin carga remota. Todos los datos se insertan solo como texto
+   seguro, nunca como marcado. La persistencia en localStorage
+   (Ejercicio 6 / Fase 6) vive solo en guardarLibros/guardarClientes/
+   guardarVentas + la carga inicial de js/data.js. */
 
 var GENERO_SIN_CLASIFICAR = "Sin clasificar";
+
+/* Persistencia local (Ejercicio 6 / Fase 6). Guarda el array completo
+   de la colección tras cada mutación exitosa. Todo acceso está en
+   try/catch: si el navegador bloquea localStorage (cuota excedida,
+   modo privado) se degrada a memoria y la sesión sigue funcional. */
+function guardarColeccion(clave, valor) {
+  try {
+    if (typeof localStorage === "undefined" || localStorage === null) {
+      return;
+    }
+    localStorage.setItem(clave, JSON.stringify(valor));
+  } catch (e) {
+    /* Degradación a memoria: la operación en curso ya se completó. */
+  }
+}
+
+function guardarLibros() {
+  guardarColeccion(
+    (typeof CLAVES_STORAGE !== "undefined" && CLAVES_STORAGE.libros) || "libreriaUTN.libros.v1",
+    estado.libros
+  );
+}
+
+function guardarClientes() {
+  guardarColeccion(
+    (typeof CLAVES_STORAGE !== "undefined" && CLAVES_STORAGE.clientes) || "libreriaUTN.clientes.v1",
+    estado.clientes
+  );
+}
+
+function guardarVentas() {
+  guardarColeccion(
+    (typeof CLAVES_STORAGE !== "undefined" && CLAVES_STORAGE.ventas) || "libreriaUTN.ventas.v1",
+    estado.ventas
+  );
+}
 
 function crearMapaPorId(registros) {
   var mapa = new Map();
@@ -165,7 +203,8 @@ function inicializarNavegacion() {
 
 /* Alta de libros y clientes (Ejercicio 4 / Fase 4).
    Todo dato se inserta solo como texto seguro (textContent /
-   createElement), nunca con innerHTML. Sin persistencia, sin ventas. */
+   createElement), nunca con innerHTML. Sin ventas. El guardado en
+   localStorage (Fase 6) se hace tras cada alta exitosa. */
 
 function normalizarISBN(isbn) {
   return String(isbn === undefined || isbn === null ? "" : isbn).replace(/[\s-]/g, "").toLowerCase();
@@ -516,6 +555,7 @@ function onSubmitLibro(evento) {
     autorIds: resultado.valor.autorIds,
     precio: resultado.valor.precio
   });
+  guardarLibros();
   mostrarErrores(contenedor, []);
   document.getElementById("form-libro").reset();
   poblarSelectsLibro();
@@ -545,6 +585,7 @@ function onSubmitCliente(evento) {
     email: resultado.valor.email,
     telefono: resultado.valor.telefono
   });
+  guardarClientes();
   mostrarErrores(contenedor, []);
   document.getElementById("form-cliente").reset();
   renderTablaClientes();
@@ -564,8 +605,9 @@ function inicializarAltas() {
 /* Ventas e historial (Ejercicio 5 / Fase 5).
    Borrador editable en memoria + confirmación con snapshot histórico.
    Cálculos siempre en números; `toFixed(2)` solo al mostrar.
-   Sin `localStorage`, sin `fetch`, sin librerías. Todo dato se inserta
-   solo como texto seguro (createElement / textContent), nunca innerHTML. */
+   Sin `fetch`, sin librerías. Todo dato se inserta
+   solo como texto seguro (createElement / textContent), nunca innerHTML.
+   El guardado en localStorage (Fase 6) se hace al confirmar la venta. */
 
 var ventaBorrador = { clienteId: "", renglones: [] };
 var ventaSeleccionadaId = null;
@@ -756,6 +798,7 @@ function confirmarVentaBorrador() {
     total: calcularTotalRenglones(renglones)
   };
   estado.ventas.push(venta);
+  guardarVentas();
   ventaSeleccionadaId = venta.id;
   return { ok: true, errores: [], venta: venta };
 }

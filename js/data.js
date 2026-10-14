@@ -102,10 +102,44 @@ var DATOS_INICIALES = {
   ]
 };
 
-/* Estado mutable en memoria, inicializado como copia profunda de
-   DATOS_INICIALES. Las fases 4-5 mutan `estado`; Fase 6 lo persistirá
-   (incluida la colección `ventas`, que vive solo en memoria y nunca
-   toca `localStorage`). */
+/* Claves versionadas de persistencia (Ejercicio 6 / Fase 6).
+   Una clave por colección para poder inspeccionar/borrar por separado
+   en DevTools; el sufijo .v1 reserva el formato ante cambios futuros. */
+var CLAVES_STORAGE = {
+  libros: "libreriaUTN.libros.v1",
+  clientes: "libreriaUTN.clientes.v1",
+  ventas: "libreriaUTN.ventas.v1"
+};
+
+/* Lee una colección desde localStorage. Devuelve el array guardado
+   (incluso vacío, que es un valor válido) o null si la clave falta,
+   el JSON es ilegible o no es un array. Nunca lanza: ante cualquier
+   fallo degrada a memoria y deja que el llamador use los ejemplos. */
+function leerColeccionGuardada(clave) {
+  try {
+    if (typeof localStorage === "undefined" || localStorage === null) {
+      return null;
+    }
+    var crudo = localStorage.getItem(clave);
+    if (crudo === null || crudo === undefined) {
+      return null;
+    }
+    var parsed = JSON.parse(crudo);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/* Estado mutable en memoria. Fase 6: cada colección persistida se carga
+   desde localStorage si existe y es válida; si falta o está corrupta se
+   usan los ejemplos de DATOS_INICIALES solo para esa colección
+   (DATOS_INICIALES queda intacto y nunca se escribe directo en
+   localStorage). `ventas` no tiene ejemplos: su fallback es []. */
+var librosGuardados = leerColeccionGuardada(CLAVES_STORAGE.libros);
+var clientesGuardados = leerColeccionGuardada(CLAVES_STORAGE.clientes);
+var ventasGuardadas = leerColeccionGuardada(CLAVES_STORAGE.ventas);
+
 var estado = {
   editoriales: DATOS_INICIALES.editoriales.map(function (e) {
     return { id: e.id, nombre: e.nombre };
@@ -116,7 +150,7 @@ var estado = {
   autores: DATOS_INICIALES.autores.map(function (a) {
     return { id: a.id, nombre: a.nombre };
   }),
-  libros: DATOS_INICIALES.libros.map(function (l) {
+  libros: librosGuardados !== null ? librosGuardados : DATOS_INICIALES.libros.map(function (l) {
     return {
       id: l.id,
       titulo: l.titulo,
@@ -127,7 +161,7 @@ var estado = {
       precio: l.precio
     };
   }),
-  clientes: DATOS_INICIALES.clientes.map(function (c) {
+  clientes: clientesGuardados !== null ? clientesGuardados : DATOS_INICIALES.clientes.map(function (c) {
     return {
       id: c.id,
       nombre: c.nombre,
@@ -137,5 +171,5 @@ var estado = {
       telefono: c.telefono
     };
   }),
-  ventas: []
+  ventas: ventasGuardadas !== null ? ventasGuardadas : []
 };
