@@ -1,6 +1,6 @@
-# TPI Frontend — Librería UTN (Grupo 3)
+# TPI Frontend — Librería UTN (Grupo Sin Nombre)
 
-**Integrantes — Grupo 3:**
+**Integrantes — Grupo Sin Nombre:**
 
 - Jeronimo Coronel
 - Sabrina Gimenez
