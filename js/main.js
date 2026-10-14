@@ -134,6 +134,12 @@ function mostrarVista(vistaId) {
   secciones.forEach(function (seccion) {
     seccion.hidden = seccion.id !== vistaId;
   });
+  if (vistaId === "vista-ventas" && typeof refrescarVistaVentas === "function") {
+    refrescarVistaVentas();
+  }
+  if (vistaId === "vista-historial" && typeof renderHistorial === "function") {
+    renderHistorial();
+  }
 }
 
 function inicializarCatalogo() {
@@ -542,6 +548,9 @@ function onSubmitCliente(evento) {
   mostrarErrores(contenedor, []);
   document.getElementById("form-cliente").reset();
   renderTablaClientes();
+  if (typeof poblarSelectVentaCliente === "function") {
+    poblarSelectVentaCliente();
+  }
 }
 
 function inicializarAltas() {
@@ -552,6 +561,478 @@ function inicializarAltas() {
   document.getElementById("form-cliente").addEventListener("submit", onSubmitCliente);
 }
 
+/* Ventas e historial (Ejercicio 5 / Fase 5).
+   Borrador editable en memoria + confirmación con snapshot histórico.
+   Cálculos siempre en números; `toFixed(2)` solo al mostrar.
+   Sin `localStorage`, sin `fetch`, sin librerías. Todo dato se inserta
+   solo como texto seguro (createElement / textContent), nunca innerHTML. */
+
+var ventaBorrador = { clienteId: "", renglones: [] };
+var ventaSeleccionadaId = null;
+
+function obtenerMapaLibros() {
+  return crearMapaPorId(estado.libros);
+}
+
+function obtenerMapaClientes() {
+  return crearMapaPorId(estado.clientes);
+}
+
+function nombreCliente(cliente) {
+  if (!cliente) {
+    return "Desconocido";
+  }
+  var nombre = String(cliente.nombre === undefined || cliente.nombre === null ? "" : cliente.nombre).trim();
+  var apellido = String(cliente.apellido === undefined || cliente.apellido === null ? "" : cliente.apellido).trim();
+  var completo = (nombre + " " + apellido).trim();
+  return completo === "" ? "Desconocido" : completo;
+}
+
+function esCantidadValida(cantidad) {
+  var n = Number(cantidad);
+  return Number.isInteger(n) && n > 0;
+}
+
+function calcularSubtotal(cantidad, precio) {
+  return Number(cantidad) * Number(precio);
+}
+
+function calcularTotalRenglones(renglones) {
+  var total = 0;
+  (renglones || []).forEach(function (renglon) {
+    total += Number(renglon.subtotal);
+  });
+  return total;
+}
+
+function formatearImporte(valor) {
+  return Number(valor).toFixed(2);
+}
+
+function fechaHoy() {
+  return new Date().toLocaleDateString("es-AR");
+}
+
+function subtotalBorrador(renglon) {
+  var mapa = obtenerMapaLibros();
+  var libro = mapa.get(renglon.libroId);
+  if (!libro || !esCantidadValida(renglon.cantidad)) {
+    return 0;
+  }
+  return calcularSubtotal(Number(renglon.cantidad), Number(libro.precio));
+}
+
+function totalBorrador() {
+  var total = 0;
+  ventaBorrador.renglones.forEach(function (renglon) {
+    total += subtotalBorrador(renglon);
+  });
+  return total;
+}
+
+function agregarRenglonBorrador(libroId, cantidad) {
+  var id = String(libroId === undefined || libroId === null ? "" : libroId);
+  if (id === "") {
+    return { ok: false, errores: ["Debe elegir un libro para el renglón."] };
+  }
+  if (!esCantidadValida(cantidad)) {
+    return { ok: false, errores: ["La cantidad del renglón debe ser un número entero mayor a cero."] };
+  }
+  var mapa = obtenerMapaLibros();
+  if (!mapa.has(id)) {
+    return { ok: false, errores: ["El libro elegido no existe."] };
+  }
+  var existente = null;
+  ventaBorrador.renglones.forEach(function (renglon) {
+    if (renglon.libroId === id) {
+      existente = renglon;
+    }
+  });
+  if (existente) {
+    existente.cantidad = Number(existente.cantidad) + Number(cantidad);
+  } else {
+    ventaBorrador.renglones.push({ libroId: id, cantidad: Number(cantidad) });
+  }
+  return { ok: true, errores: [] };
+}
+
+function cambiarCantidadRenglon(indice, cantidad) {
+  if (indice < 0 || indice >= ventaBorrador.renglones.length) {
+    return;
+  }
+  ventaBorrador.renglones[indice].cantidad = cantidad;
+}
+
+function cambiarLibroRenglon(indice, libroId) {
+  if (indice < 0 || indice >= ventaBorrador.renglones.length) {
+    return;
+  }
+  var id = String(libroId === undefined || libroId === null ? "" : libroId);
+  var duplicado = -1;
+  ventaBorrador.renglones.forEach(function (renglon, i) {
+    if (i !== indice && renglon.libroId === id && id !== "") {
+      duplicado = i;
+    }
+  });
+  if (duplicado !== -1) {
+    var actual = ventaBorrador.renglones[indice];
+    var destino = ventaBorrador.renglones[duplicado];
+    var suma = Number(actual.cantidad);
+    if (!esCantidadValida(suma)) {
+      suma = 1;
+    }
+    destino.cantidad = Number(destino.cantidad) + suma;
+    ventaBorrador.renglones.splice(indice, 1);
+    return;
+  }
+  ventaBorrador.renglones[indice].libroId = id;
+}
+
+function quitarRenglonBorrador(indice) {
+  if (indice < 0 || indice >= ventaBorrador.renglones.length) {
+    return;
+  }
+  ventaBorrador.renglones.splice(indice, 1);
+}
+
+function validarVenta(clienteId, renglones) {
+  var errores = [];
+  var idCliente = String(clienteId === undefined || clienteId === null ? "" : clienteId);
+  if (idCliente === "") {
+    errores.push("Debe seleccionar un cliente para la venta.");
+  } else {
+    var clienteExiste = estado.clientes.some(function (cliente) {
+      return cliente.id === idCliente;
+    });
+    if (!clienteExiste) {
+      errores.push("El cliente seleccionado no existe.");
+    }
+  }
+  var lista = Array.isArray(renglones) ? renglones : [];
+  if (lista.length === 0) {
+    errores.push("La venta debe tener al menos un renglón.");
+    return errores;
+  }
+  var mapa = obtenerMapaLibros();
+  lista.forEach(function (renglon, i) {
+    var nro = i + 1;
+    var libroId = renglon ? renglon.libroId : "";
+    if (!mapa.has(libroId)) {
+      errores.push("El libro del renglón " + nro + " no existe.");
+    }
+    if (!renglon || !esCantidadValida(renglon.cantidad)) {
+      errores.push("La cantidad del renglón " + nro + " debe ser un número entero mayor a cero.");
+    }
+  });
+  return errores;
+}
+
+function confirmarVentaBorrador() {
+  var errores = validarVenta(ventaBorrador.clienteId, ventaBorrador.renglones);
+  if (errores.length > 0) {
+    return { ok: false, errores: errores, venta: null };
+  }
+  var mapaClientes = obtenerMapaClientes();
+  var mapaLibros = obtenerMapaLibros();
+  var cliente = mapaClientes.get(ventaBorrador.clienteId);
+  var renglones = ventaBorrador.renglones.map(function (renglon) {
+    var libro = mapaLibros.get(renglon.libroId);
+    var cantidad = Number(renglon.cantidad);
+    var precioUnitario = Number(libro.precio);
+    return {
+      libroId: libro.id,
+      titulo: libro.titulo,
+      precioUnitario: precioUnitario,
+      cantidad: cantidad,
+      subtotal: calcularSubtotal(cantidad, precioUnitario)
+    };
+  });
+  var venta = {
+    id: siguienteId("v-", estado.ventas),
+    fecha: fechaHoy(),
+    clienteId: cliente.id,
+    clienteNombre: nombreCliente(cliente),
+    renglones: renglones,
+    total: calcularTotalRenglones(renglones)
+  };
+  estado.ventas.push(venta);
+  ventaSeleccionadaId = venta.id;
+  return { ok: true, errores: [], venta: venta };
+}
+
+function poblarSelectVentaCliente() {
+  var select = document.getElementById("venta-cliente");
+  if (!select) {
+    return;
+  }
+  var previo = ventaBorrador.clienteId || select.value || "";
+  while (select.firstChild) {
+    select.removeChild(select.firstChild);
+  }
+  select.appendChild(crearOpcion("", "Seleccione un cliente"));
+  estado.clientes.forEach(function (cliente) {
+    select.appendChild(crearOpcion(cliente.id, nombreCliente(cliente)));
+  });
+  var sigue = estado.clientes.some(function (cliente) {
+    return cliente.id === previo;
+  });
+  var vigente = sigue ? previo : "";
+  select.value = vigente;
+  ventaBorrador.clienteId = vigente;
+}
+
+function crearSelectLibroRenglon(seleccionado) {
+  var select = document.createElement("select");
+  select.setAttribute("name", "libro");
+  select.setAttribute("required", "required");
+  select.appendChild(crearOpcion("", "Seleccione un libro"));
+  estado.libros.forEach(function (libro) {
+    var opcion = crearOpcion(libro.id, libro.titulo);
+    if (libro.id === seleccionado) {
+      opcion.selected = true;
+    }
+    select.appendChild(opcion);
+  });
+  select.value = seleccionado || "";
+  return select;
+}
+
+function renderRenglonesVenta() {
+  var contenedor = document.getElementById("renglones-venta");
+  if (!contenedor) {
+    return;
+  }
+  while (contenedor.firstChild) {
+    contenedor.removeChild(contenedor.firstChild);
+  }
+  ventaBorrador.renglones.forEach(function (renglon, indice) {
+    var fila = document.createElement("div");
+
+    var etiquetaLibro = document.createElement("label");
+    etiquetaLibro.textContent = "Libro ";
+    var select = crearSelectLibroRenglon(renglon.libroId);
+    select.setAttribute("data-indice", String(indice));
+    select.addEventListener("change", function (evento) {
+      cambiarLibroRenglon(indice, evento.target.value);
+      renderRenglonesVenta();
+      renderResumenVenta();
+    });
+    etiquetaLibro.appendChild(select);
+    fila.appendChild(etiquetaLibro);
+
+    var etiquetaCantidad = document.createElement("label");
+    etiquetaCantidad.textContent = "Cantidad ";
+    var cantidad = document.createElement("input");
+    cantidad.setAttribute("type", "number");
+    cantidad.setAttribute("name", "cantidad");
+    cantidad.setAttribute("min", "1");
+    cantidad.setAttribute("required", "required");
+    cantidad.value = String(renglon.cantidad);
+    cantidad.setAttribute("data-indice", String(indice));
+    cantidad.addEventListener("input", function (evento) {
+      cambiarCantidadRenglon(indice, evento.target.value);
+      renderResumenVenta();
+    });
+    cantidad.addEventListener("change", function (evento) {
+      cambiarCantidadRenglon(indice, evento.target.value);
+      renderResumenVenta();
+    });
+    etiquetaCantidad.appendChild(cantidad);
+    fila.appendChild(etiquetaCantidad);
+
+    var subtotal = document.createElement("span");
+    subtotal.textContent = "Subtotal: $" + formatearImporte(subtotalBorrador(renglon));
+    fila.appendChild(subtotal);
+
+    var quitar = document.createElement("button");
+    quitar.setAttribute("type", "button");
+    quitar.setAttribute("data-indice", String(indice));
+    quitar.textContent = "Quitar";
+    quitar.addEventListener("click", function (evento) {
+      evento.preventDefault();
+      quitarRenglonBorrador(indice);
+      renderRenglonesVenta();
+      renderResumenVenta();
+    });
+    fila.appendChild(quitar);
+
+    contenedor.appendChild(fila);
+  });
+}
+
+function renderResumenVenta() {
+  var subtotal = document.getElementById("resumen-subtotal");
+  var total = document.getElementById("resumen-total");
+  var importe = totalBorrador();
+  if (subtotal) {
+    subtotal.textContent = "$" + formatearImporte(importe);
+  }
+  if (total) {
+    total.textContent = "$" + formatearImporte(importe);
+  }
+}
+
+function renderHistorial() {
+  var cuerpo = document.getElementById("cuerpo-tabla-historial");
+  var vacio = document.getElementById("historial-vacio");
+  if (!cuerpo) {
+    return;
+  }
+  while (cuerpo.firstChild) {
+    cuerpo.removeChild(cuerpo.firstChild);
+  }
+  estado.ventas.forEach(function (venta) {
+    var fila = document.createElement("tr");
+    fila.setAttribute("data-venta-id", venta.id);
+    var idFecha = document.createElement("td");
+    idFecha.textContent = venta.id + " — " + venta.fecha;
+    fila.appendChild(idFecha);
+    var cliente = document.createElement("td");
+    cliente.textContent = venta.clienteNombre;
+    fila.appendChild(cliente);
+    var items = document.createElement("td");
+    var cantidadTotal = 0;
+    venta.renglones.forEach(function (renglon) {
+      cantidadTotal += Number(renglon.cantidad);
+    });
+    items.textContent = String(cantidadTotal);
+    fila.appendChild(items);
+    var total = document.createElement("td");
+    total.textContent = "$" + formatearImporte(venta.total);
+    fila.appendChild(total);
+    fila.addEventListener("click", function () {
+      ventaSeleccionadaId = venta.id;
+      renderDetalleVenta();
+    });
+    cuerpo.appendChild(fila);
+  });
+  if (vacio) {
+    vacio.hidden = estado.ventas.length !== 0;
+  }
+  renderDetalleVenta();
+}
+
+function renderDetalleVenta() {
+  var detalle = document.getElementById("detalle-venta");
+  if (!detalle) {
+    return;
+  }
+  while (detalle.firstChild) {
+    detalle.removeChild(detalle.firstChild);
+  }
+  var titulo = document.createElement("h3");
+  var venta = null;
+  estado.ventas.forEach(function (v) {
+    if (v.id === ventaSeleccionadaId) {
+      venta = v;
+    }
+  });
+  if (!venta) {
+    if (estado.ventas.length > 0) {
+      venta = estado.ventas[estado.ventas.length - 1];
+      ventaSeleccionadaId = venta.id;
+    } else {
+      titulo.textContent = "Detalle de venta";
+      detalle.appendChild(titulo);
+      var vacio = document.createElement("p");
+      vacio.textContent = "Seleccione una venta del historial para ver el detalle.";
+      detalle.appendChild(vacio);
+      return;
+    }
+  }
+  titulo.textContent = "Detalle de venta " + venta.id + " — " + venta.fecha;
+  detalle.appendChild(titulo);
+  var cliente = document.createElement("p");
+  cliente.textContent = "Cliente: " + venta.clienteNombre;
+  detalle.appendChild(cliente);
+  var lista = document.createElement("ul");
+  venta.renglones.forEach(function (renglon) {
+    var item = document.createElement("li");
+    item.textContent = renglon.titulo + " — Cantidad: " + renglon.cantidad +
+      " — Precio: $" + formatearImporte(renglon.precioUnitario) +
+      " — Subtotal: $" + formatearImporte(renglon.subtotal);
+    lista.appendChild(item);
+  });
+  detalle.appendChild(lista);
+  var total = document.createElement("p");
+  total.textContent = "Total: $" + formatearImporte(venta.total);
+  detalle.appendChild(total);
+}
+
+function refrescarVistaVentas() {
+  poblarSelectVentaCliente();
+  renderRenglonesVenta();
+  renderResumenVenta();
+}
+
+function onAgregarRenglon(evento) {
+  if (evento && typeof evento.preventDefault === "function") {
+    evento.preventDefault();
+  }
+  ventaBorrador.renglones.push({ libroId: "", cantidad: 1 });
+  mostrarErrores(document.getElementById("mensaje-venta-error"), []);
+  renderRenglonesVenta();
+  renderResumenVenta();
+}
+
+function onSubmitVenta(evento) {
+  evento.preventDefault();
+  var select = document.getElementById("venta-cliente");
+  ventaBorrador.clienteId = select ? select.value : "";
+  var error = document.getElementById("mensaje-venta-error");
+  var exito = document.getElementById("mensaje-venta-exito");
+  var resultado = confirmarVentaBorrador();
+  if (!resultado.ok) {
+    mostrarErrores(error, resultado.errores);
+    if (exito) {
+      exito.hidden = true;
+    }
+    return;
+  }
+  mostrarErrores(error, []);
+  ventaBorrador = { clienteId: "", renglones: [] };
+  if (select) {
+    select.value = "";
+  }
+  refrescarVistaVentas();
+  renderHistorial();
+  if (exito) {
+    while (exito.firstChild) {
+      exito.removeChild(exito.firstChild);
+    }
+    exito.textContent = "Venta " + resultado.venta.id + " registrada con éxito por $" +
+      formatearImporte(resultado.venta.total) + ".";
+    exito.hidden = false;
+  }
+}
+
+function inicializarVentas() {
+  var form = document.getElementById("form-venta");
+  if (!form) {
+    return;
+  }
+  var select = document.getElementById("venta-cliente");
+  if (select) {
+    select.addEventListener("change", function (evento) {
+      ventaBorrador.clienteId = evento.target.value;
+      mostrarErrores(document.getElementById("mensaje-venta-error"), []);
+    });
+  }
+  var agregar = form.querySelector('button[type="button"]');
+  if (agregar) {
+    agregar.addEventListener("click", onAgregarRenglon);
+  }
+  form.addEventListener("submit", onSubmitVenta);
+  mostrarErrores(document.getElementById("mensaje-venta-error"), []);
+  var exito = document.getElementById("mensaje-venta-exito");
+  if (exito) {
+    exito.hidden = true;
+  }
+  refrescarVistaVentas();
+  renderHistorial();
+}
+
 inicializarCatalogo();
 inicializarNavegacion();
 inicializarAltas();
+inicializarVentas();

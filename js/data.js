@@ -103,7 +103,9 @@ var DATOS_INICIALES = {
 };
 
 /* Estado mutable en memoria, inicializado como copia profunda de
-   DATOS_INICIALES. Las fases 4-5 mutan `estado`; Fase 6 lo persistirá. */
+   DATOS_INICIALES. Las fases 4-5 mutan `estado`; Fase 6 lo persistirá
+   (incluida la colección `ventas`, que vive solo en memoria y nunca
+   toca `localStorage`). */
 var estado = {
   editoriales: DATOS_INICIALES.editoriales.map(function (e) {
     return { id: e.id, nombre: e.nombre };
@@ -134,5 +136,6 @@ var estado = {
       email: c.email,
       telefono: c.telefono
     };
-  })
+  }),
+  ventas: []
 };
