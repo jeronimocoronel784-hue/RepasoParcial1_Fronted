@@ -3,9 +3,9 @@
 **Integrantes — Grupo 3:**
 
 - Jeronimo Coronel
-- Ismael Saleme
-- Joaquin Godoy
 - Sabrina Gimenez
+- Joaquin Godoy
+- Ismael Saleme
 
 ## Cómo abrir la app (sin npm, sin instalación)
 
